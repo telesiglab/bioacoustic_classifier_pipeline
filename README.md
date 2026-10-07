@@ -1,59 +1,59 @@
 # Bioacoustic Classifier Pipeline
 
-Flujo de trabajo en notebooks de Python para crear, aplicar y evaluar clasificadores bioacústicos a partir de grabaciones de audio. Utiliza **Perch** para extraer embeddings —representaciones numéricas del sonido— y **Perch-Hoplite** para almacenarlos, buscar señales similares y entrenar clasificadores mediante anotación humana iterativa (*agile modeling*).
+A Python notebook workflow for creating, applying, and evaluating bioacoustic classifiers from audio recordings. It uses **Perch** to extract embeddings—numerical representations of sound—and **Perch-Hoplite** to store them, search for similar signals, and train classifiers through iterative human annotation (*agile modeling*).
 
-El proyecto permite trabajar con una especie o vocalización objetivo y también incluye una ruta de **predicción multiespecie** que reutiliza los embeddings con la cabeza clasificadora original de Perch.
+The project supports working with a target species or vocalization and also includes a **multispecies prediction** workflow that reuses embeddings with the original Perch classifier head.
 
-## Qué permite hacer
+## Capabilities
 
-- Inventariar archivos WAV y seleccionar muestras reproducibles por deployment (sitio o unidad de despliegue) y tiempo.
-- Generar una base de embeddings con SQLite y USearch, con manifiestos y controles de consistencia.
-- Buscar vocalizaciones similares a una plantilla, escucharlas y etiquetarlas manualmente.
-- Construir una partición de entrenamiento y prueba por grabación completa, estratificada según scores preliminares.
-- Entrenar y refinar un clasificador lineal sobre los embeddings.
-- Exportar predicciones por ventana y evaluarlas frente a anotaciones manuales.
-- Obtener predicciones multiespecie y resúmenes por deployment y día u hora.
+- Inventory WAV files and select reproducible samples by deployment (site or deployment unit) and time.
+- Generate an embedding database with SQLite and USearch, including manifests and consistency checks.
+- Search for vocalizations similar to a template, listen to them, and label them manually.
+- Create a training and test split at the full-recording level, stratified by preliminary scores.
+- Train and refine a linear classifier on the embeddings.
+- Export window-level predictions and evaluate them against manual annotations.
+- Obtain multispecies predictions and summaries by deployment and day or hour.
 
-Los notebooks requieren configuración y revisión humana. Los audios, las bases de datos, las anotaciones de referencia y los clasificadores personalizados deben aportarse o generarse durante el proceso; no están incluidos en el repositorio.
+The notebooks require configuration and human review. Audio files, databases, reference annotations, and custom classifiers must be supplied or generated during the workflow; they are not included in the repository.
 
-## Flujo de trabajo
+## Workflow
 
 ```mermaid
 flowchart TD
-    A[Grabaciones WAV] --> B[01 · Inventario, muestreo y embeddings]
-    B --> C[02 · Plantilla, anotación y scores preliminares]
-    C --> D[03 · Partición por grabación y exportación del test]
-    D --> E[04 · Bases de entrenamiento y prueba]
-    E --> F[05 · Anotación iterativa y entrenamiento]
-    F --> G[06 · Predicción sobre test o nuevos datos]
-    D --> H[Anotación manual del test en Raven Pro]
-    G --> I[07 · Evaluación]
+    A[WAV recordings] --> B[01 · Inventory, sampling, and embeddings]
+    B --> C[02 · Template, annotation, and preliminary scores]
+    C --> D[03 · Recording-level split and test export]
+    D --> E[04 · Training and test databases]
+    E --> F[05 · Iterative annotation and training]
+    F --> G[06 · Prediction on test or new data]
+    D --> H[Manual test annotation in Raven Pro]
+    G --> I[07 · Evaluation]
     H --> I
-    B --> J[01b · Predicción multiespecie desde embeddings]
+    B --> J[01b · Multispecies prediction from embeddings]
 ```
 
-La ruta `01b` es opcional y puede ejecutarse después de `01`, sin completar el entrenamiento personalizado de los notebooks `02` a `07`.
+The `01b` workflow is optional and can be run after `01`, without completing custom training in notebooks `02` through `07`.
 
 ## Notebooks
 
-| Notebook | Función | Salidas principales |
+| Notebook | Purpose | Main outputs |
 |---|---|---|
-| [01 · Embeddings](notebooks/01_pipeline_embeddings.ipynb) | Inventaría los WAV, selecciona una muestra y genera embeddings con `perch_8`. | Base Hoplite y carpeta `sampling_audit/` con manifiesto, configuración y validaciones. |
-| [01b · Multiespecie](notebooks/01b_multispecies_from_embeddings.ipynb) | Aplica la cabeza original de Perch a embeddings existentes, con selección geográfica de especies. | Predicciones Parquet, listas de especies y resúmenes CSV. |
-| [02 · Pattern matching](notebooks/02_pipeline_pattern%20matching.ipynb) | Busca ejemplos similares a una plantilla, permite anotarlos y entrena un clasificador preliminar. | Modelo inicial, predicciones por ventana y resumen de scores por grabación. |
-| [03 · Partición estratificada](notebooks/03_pipeline_Particion_estratificada_por_score.ipynb) | Divide grabaciones completas por quintiles de score y exporta audios para revisión. | `recording_split.csv`, tablas de train/test, manifiesto de partición y audios de test. |
-| [04 · Bases de train y test](notebooks/04_pipeline_Train_and_Test_DB_cierre_y_limpieza.ipynb) | Copia y depura la base completa según la partición. | Bases Hoplite separadas y CSV de auditoría de anotaciones retiradas. |
-| [05 · Agile modeling](notebooks/05_pipeline_Agile%20modeling.ipynb) | Alterna búsqueda, escucha, anotación y reentrenamiento sobre train; explora un umbral en validación interna. | Clasificadores `.pt` y métricas de validación. |
-| [06 · Predicción](notebooks/06_pipeline_predecir.ipynb) | Aplica el clasificador a una base compatible de test o de nuevos datos. | CSV con logits por ventana para la etiqueta seleccionada. |
-| [07 · Evaluación](notebooks/07_pipeline_evaluar_modelo.ipynb) | Contrasta predicciones con anotaciones manuales y duraciones. | Métricas, intervalos de confianza, análisis de umbrales y tablas de errores. |
+| [01 · Embeddings](notebooks/01_pipeline_embeddings.ipynb) | Inventories WAV files, selects a sample, and generates embeddings with `perch_8`. | Hoplite database and `sampling_audit/` folder with a manifest, configuration, and validation results. |
+| [01b · Multispecies](notebooks/01b_multispecies_from_embeddings.ipynb) | Applies the original Perch head to existing embeddings, with geographic species selection. | Parquet predictions, species lists, and CSV summaries. |
+| [02 · Pattern matching](notebooks/02_pipeline_pattern%20matching.ipynb) | Searches for examples similar to a template, supports annotation, and trains a preliminary classifier. | Initial model, window-level predictions, and recording score summary. |
+| [03 · Stratified split](notebooks/03_pipeline_Particion_estratificada_por_score.ipynb) | Splits full recordings by score quintiles and exports audio for review. | `recording_split.csv`, training/test tables, split manifest, and test audio. |
+| [04 · Training and test databases](notebooks/04_pipeline_Train_and_Test_DB_cierre_y_limpieza.ipynb) | Copies and cleans the full database according to the split. | Separate Hoplite databases and an audit CSV of removed annotations. |
+| [05 · Agile modeling](notebooks/05_pipeline_Agile%20modeling.ipynb) | Alternates search, listening, annotation, and retraining on the training set; explores a threshold using internal validation. | `.pt` classifiers and validation metrics. |
+| [06 · Prediction](notebooks/06_pipeline_predecir.ipynb) | Applies the classifier to a compatible test or new-data database. | CSV with window-level logits for the selected label. |
+| [07 · Evaluation](notebooks/07_pipeline_evaluar_modelo.ipynb) | Compares predictions against manual annotations and durations. | Metrics, confidence intervals, threshold analysis, and error tables. |
 
-## Requisitos e instalación
+## Requirements and installation
 
-El entorno se declara en [`pyproject.toml`](pyproject.toml) y se fija mediante [`uv.lock`](uv.lock). Requiere **Python 3.10** e incluye Perch-Hoplite `1.0.2`, TensorFlow `2.20.0`, NumPy `2.0.2`, USearch `2.25.2`, pandas, scikit-learn y JupyterLab.
+The environment is declared in [`pyproject.toml`](pyproject.toml) and locked through [`uv.lock`](uv.lock). It requires **Python 3.10** and includes Perch-Hoplite `1.0.2`, TensorFlow `2.20.0`, NumPy `2.0.2`, USearch `2.25.2`, pandas, scikit-learn, and JupyterLab.
 
-Necesitarás Git, `uv`, acceso a tus grabaciones y almacenamiento suficiente para los embeddings, las copias de las bases train/test y los audios exportados. Raven Pro se utiliza fuera de Python para la anotación manual del conjunto de prueba.
+You will need Git, `uv`, access to your recordings, and sufficient storage for embeddings, copies of the training/test databases, and exported audio. Raven Pro is used outside Python for manual annotation of the test set.
 
-Desde una terminal:
+From a terminal:
 
 ```bash
 git clone https://github.com/telesiglab/bioacoustic_classifier_pipeline.git
@@ -63,13 +63,13 @@ uv sync --locked
 uv run jupyter lab
 ```
 
-También puedes abrir el proyecto en VS Code con soporte para Python y Jupyter, y seleccionar el intérprete de `.venv` como kernel.
+You can also open the project in VS Code with Python and Jupyter support and select the interpreter in `.venv` as the kernel.
 
-El notebook `01` está preparado para Windows nativo. Otros notebooks contienen ejemplos de rutas de WSL/Linux, como `/mnt/d/...`. **Adapta las rutas de todos los notebooks al entorno que utilices**; sus valores predeterminados no describen una única ejecución ya conectada. El modelo `perch_8` está configurado para poder trabajar en CPU. La carga inicial del modelo puede requerir descargar sus recursos.
+Notebook `01` is prepared for native Windows. Other notebooks contain example WSL/Linux paths, such as `/mnt/d/...`. **Adapt the paths in all notebooks to your environment**; their default values do not describe a single, fully connected run. The `perch_8` model is configured to support CPU execution. Loading the model for the first time may require downloading its resources.
 
-## Preparar los datos
+## Prepare the data
 
-El notebook `01` espera archivos WAV y permite configurar su organización mediante `dataset_fileglob` y `group_depth`. Por ejemplo, con `dataset_fileglob = "*/*/*.wav"` y `group_depth = 1`:
+Notebook `01` expects WAV files and allows their organization to be configured through `dataset_fileglob` and `group_depth`. For example, with `dataset_fileglob = "*/*/*.wav"` and `group_depth = 1`:
 
 ```text
 audios/
@@ -81,79 +81,79 @@ audios/
         └── 20260115_061000.wav
 ```
 
-La primera carpeta identifica el deployment. Ajusta `date_regex` y `date_format` para extraer la fecha de los nombres de tus archivos.
+The first folder identifies the deployment. Adjust `date_regex` and `date_format` to extract dates from your filenames.
 
-Antes de generar embeddings, configura:
+Before generating embeddings, configure:
 
-| Parámetro | Qué define |
+| Parameter | What it defines |
 |---|---|
-| `dataset_name`, `dataset_base_path` | Identidad del conjunto y carpeta de audios. |
-| `dataset_fileglob`, `group_depth` | Búsqueda de WAV y nivel que identifica el deployment. |
-| `db_workspace_root`, `sample_name` | Ubicación y nombre de la base generada. |
-| `sampling_strategy`, `random_seed` | Estrategia de selección y reproducibilidad. |
-| `model_choice`, `batch_size` | Modelo de embeddings y tamaño de lote. |
+| `dataset_name`, `dataset_base_path` | Dataset identity and audio folder. |
+| `dataset_fileglob`, `group_depth` | WAV discovery and the folder level that identifies the deployment. |
+| `db_workspace_root`, `sample_name` | Location and name of the generated database. |
+| `sampling_strategy`, `random_seed` | Selection strategy and reproducibility. |
+| `model_choice`, `batch_size` | Embedding model and batch size. |
 
-Las estrategias de muestreo disponibles son `all`, `random_fraction`, `alternate_days`, `stratified_month` y `systematic_files`. `alternate_days` alterna los días observados de cada deployment; no necesariamente días consecutivos del calendario.
+The available sampling strategies are `all`, `random_fraction`, `alternate_days`, `stratified_month`, and `systematic_files`. `alternate_days` alternates the observed days within each deployment; these are not necessarily consecutive calendar days.
 
-La extracción lee los audios desde sus ubicaciones originales, sin copiarlos. Conserva esas rutas para las etapas posteriores de escucha y anotación. Guarda la base Hoplite en un disco local estable, preferiblemente SSD.
+Embedding extraction reads audio from its original locations without copying it. Preserve these paths for subsequent listening and annotation stages. Store the Hoplite database on a stable local disk, preferably an SSD.
 
-## Entrenar y evaluar un clasificador personalizado
+## Train and evaluate a custom classifier
 
-1. **Generar embeddings (`01`).** Revisa el inventario y la muestra antes de iniciar el procesamiento. Conserva `sampling_audit/sample_manifest.csv`. Si cambias la selección, utiliza otro `sample_name` para evitar mezclar muestras.
-2. **Obtener scores preliminares (`02`).** Configura la base, `query_uri` y `query_label`. Selecciona una plantilla representativa, revisa los resultados y guarda las etiquetas. Entrena el modelo preliminar y genera el resumen `*_recording_summary.csv` que utilizará el notebook siguiente.
-3. **Separar train y test (`03`).** Conecta `PATH_TO_RECORDING_SUMMARY` con ese resumen y `PATH_TO_EMBEDDINGS` con el archivo `hoplite.sqlite`. Ajusta `N_TEST_FILES` y `SEED`. Por defecto se usan cinco estratos y `preliminary_top_k_mean_score`. Todas las ventanas de una grabación permanecen en el mismo conjunto.
-4. **Crear las bases separadas (`04`).** Configura `COMPLETE_DB_PATH`, `TRAIN_DB_PATH`, `TEST_DB_PATH` y `SPLIT_CSV`. En el código actual, ambas llamadas usan `clear_annotations=True`: las anotaciones preliminares de train y test se exportan para auditoría y se eliminan de las nuevas bases. El entrenamiento de `05` comienza anotando nuevamente sobre train.
-5. **Anotar y entrenar (`05`).** Trabaja con `train_db`, guarda las anotaciones y repite el ciclo de búsqueda y entrenamiento. Actualiza `model_path` y `model_output_path` entre iteraciones. Define el umbral operativo con los datos de entrenamiento/validación antes de consultar los resultados del test.
-6. **Predecir (`06`).** Configura `DB_PATH`, `MODEL_PATH`, `OUTPUT_CSV_PATH` y `TARGET_LABEL`. Para evaluación, conserva `EXPORT_LOGIT_THRESHOLD = -np.inf` para exportar todas las ventanas. La base debe utilizar embeddings compatibles con el clasificador.
-7. **Evaluar (`07`).** Prepara las anotaciones manuales y las duraciones, configura sus rutas y fija `DECISION_THRESHOLD`. Revisa las auditorías de cobertura, las métricas y los ejemplos de errores.
+1. **Generate embeddings (`01`).** Review the inventory and sample before starting processing. Keep `sampling_audit/sample_manifest.csv`. If you change the selection, use a different `sample_name` to avoid mixing samples.
+2. **Obtain preliminary scores (`02`).** Configure the database, `query_uri`, and `query_label`. Select a representative template, review the results, and save the labels. Train the preliminary model and generate the `*_recording_summary.csv` summary used by the next notebook.
+3. **Separate training and test sets (`03`).** Set `PATH_TO_RECORDING_SUMMARY` to that summary and `PATH_TO_EMBEDDINGS` to the `hoplite.sqlite` file. Adjust `N_TEST_FILES` and `SEED`. The defaults use five strata and `preliminary_top_k_mean_score`. All windows from a recording remain in the same set.
+4. **Create separate databases (`04`).** Configure `COMPLETE_DB_PATH`, `TRAIN_DB_PATH`, `TEST_DB_PATH`, and `SPLIT_CSV`. In the current code, both calls use `clear_annotations=True`: preliminary training and test annotations are exported for auditing and removed from the new databases. Training in `05` starts by annotating the training set again.
+5. **Annotate and train (`05`).** Work with `train_db`, save annotations, and repeat the search and training cycle. Update `model_path` and `model_output_path` between iterations. Define the operational threshold using training/validation data before examining test results.
+6. **Predict (`06`).** Configure `DB_PATH`, `MODEL_PATH`, `OUTPUT_CSV_PATH`, and `TARGET_LABEL`. For evaluation, keep `EXPORT_LOGIT_THRESHOLD = -np.inf` to export all windows. The database must use embeddings compatible with the classifier.
+7. **Evaluate (`07`).** Prepare manual annotations and durations, configure their paths, and set `DECISION_THRESHOLD`. Review coverage audits, metrics, and error examples.
 
-Ejecuta las celdas de cierre de las bases antes de abrirlas desde otro notebook. En `04`, `REBUILD_SUBSET_DATABASES = True` reconstruye las carpetas de destino existentes: revisa esas rutas antes de ejecutarlo para no perder anotaciones de trabajo anteriores.
+Run the database shutdown cells before opening the databases from another notebook. In `04`, `REBUILD_SUBSET_DATABASES = True` rebuilds existing destination folders: review these paths before running it to avoid losing previous working annotations.
 
-### Archivos necesarios para la evaluación
+### Files required for evaluation
 
-El notebook `07` lee tres CSV:
+Notebook `07` reads three CSV files:
 
-| Archivo | Columnas necesarias con la configuración predeterminada |
+| File | Required columns with the default configuration |
 |---|---|
-| Predicciones de `06` | `filename`, `window_start`, `window_end`, `logits`; la exportación también incluye `idx`, `project` y `label`. |
-| Anotaciones manuales | `filename`, `label`, `File Offset (s)`, `duration`. `Calidad` se utiliza si se activa el filtro de calidad. |
-| Duraciones de audio | `filename`, `duration`. |
+| Predictions from `06` | `filename`, `window_start`, `window_end`, `logits`; the export also includes `idx`, `project`, and `label`. |
+| Manual annotations | `filename`, `label`, `File Offset (s)`, `duration`. `Calidad` is used if quality filtering is enabled. |
+| Audio durations | `filename`, `duration`. |
 
-Los tiempos y las duraciones se expresan en segundos. En anotaciones, `duration` es la duración del evento; en la tabla de duraciones, es la del archivo de audio completo. Los CSV deben prepararse con este esquema: el notebook no convierte automáticamente cualquier tabla exportada por Raven.
+Times and durations are expressed in seconds. In annotations, `duration` is the event duration; in the durations table, it is the duration of the full audio file. CSV files must be prepared with this schema: the notebook does not automatically convert arbitrary tables exported by Raven.
 
-**Verifica la correspondencia de nombres:** `03` añade el `recording_id` al nombre de los audios copiados para test, mientras que las predicciones pueden conservar el nombre original. Usa `copy_log.csv` para reconciliar esos nombres antes de evaluar. `07` compara nombres base y no admite archivos distintos con el mismo nombre en la tabla de duraciones.
+**Verify filename correspondence:** `03` adds `recording_id` to the names of audio files copied for testing, whereas predictions may retain the original names. Use `copy_log.csv` to reconcile these names before evaluation. `07` compares basenames and does not allow different files with the same name in the durations table.
 
-Las grabaciones sin eventos objetivo también deben estar representadas en predicciones y duraciones, y haber sido revisadas para que sus ventanas puedan tratarse como negativas.
+Recordings without target events must also be represented in predictions and durations, and must have been reviewed so that their windows can be treated as negatives.
 
-### Resultados e interpretación
+### Results and interpretation
 
-La evaluación reporta precision, recall, especificidad, F1, accuracy, balanced accuracy, MCC, ROC AUC, average precision y falsos positivos por hora. Incluye análisis por ventana, evento y archivo, además de intervalos de confianza mediante bootstrap agrupado por archivo.
+Evaluation reports precision, recall, specificity, F1, accuracy, balanced accuracy, MCC, ROC AUC, average precision, and false positives per hour. It includes window-, event-, and file-level analyses, as well as confidence intervals from a bootstrap grouped by file.
 
-Entre sus salidas están:
+Outputs include:
 
-- `metrics_fixed_threshold.csv` y `metrics_bootstrap_ci.csv`: métricas al umbral fijado e incertidumbre.
-- `threshold_performance.csv`: exploración del comportamiento a distintos umbrales.
-- `coverage_audit.csv`: cobertura temporal de las predicciones.
-- `false_positive_windows.csv`, `false_negative_windows.csv` y `missed_annotations.csv`: ejemplos para revisar errores.
+- `metrics_fixed_threshold.csv` and `metrics_bootstrap_ci.csv`: metrics at the fixed threshold and uncertainty.
+- `threshold_performance.csv`: exploration of behavior at different thresholds.
+- `coverage_audit.csv`: temporal coverage of predictions.
+- `false_positive_windows.csv`, `false_negative_windows.csv`, and `missed_annotations.csv`: examples for reviewing errors.
 
-El score del clasificador es un **logit**, no una probabilidad calibrada. Aplicar una sigmoide produce un valor entre 0 y 1, pero no demuestra calibración. El máximo F1 obtenido explorando el propio test es diagnóstico y no debe presentarse como una evaluación independiente del umbral.
+The classifier score is a **logit**, not a calibrated probability. Applying a sigmoid produces a value between 0 and 1, but does not establish calibration. The maximum F1 obtained by exploring the test set itself is diagnostic and should not be presented as an independent evaluation of the threshold.
 
-La separación por grabación evita compartir ventanas de un mismo archivo entre train y test. No garantiza independencia entre sitios, campañas o grabaciones temporalmente cercanas; esa independencia debe establecerse según el objetivo del estudio. El modelo preliminar de `02` se usa antes de la partición para orientar el muestreo, por lo que conviene documentar este diseño al reportar resultados.
+Splitting by recording prevents windows from the same file from being shared between training and test sets. It does not guarantee independence across sites, campaigns, or recordings close in time; that independence must be established according to the study objective. The preliminary model from `02` is used before splitting to guide sampling, so this design should be documented when reporting results.
 
-## Predicción multiespecie opcional
+## Optional multispecies prediction
 
-Después de `01`, abre `01b_multispecies_from_embeddings.ipynb` y configura `DB_PATH`, `MODEL_CHOICE` y `RUN_NAME`. El modelo y su versión deben corresponder a los embeddings de la base.
+After `01`, open `01b_multispecies_from_embeddings.ipynb` and configure `DB_PATH`, `MODEL_CHOICE`, and `RUN_NAME`. The model and its version must match the database embeddings.
 
-El notebook ofrece dos métodos:
+The notebook offers two methods:
 
-- **Búsqueda rápida:** recupera candidatos mediante vecinos aproximados y recalcula sus scores. Sirve para explorar detecciones; no garantiza cobertura de cada especie, fecha o deployment.
-- **Inferencia exhaustiva:** aplica la cabeza clasificadora a todas las ventanas por lotes. La exportación sigue limitada por `EXHAUSTIVE_MIN_SCORE` y `MAX_PREDICTIONS_PER_WINDOW`; configura este último como `None` para guardar todas las clases que superen el umbral.
+- **Fast search:** retrieves candidates using approximate neighbors and recomputes their scores. It is useful for exploring detections; it does not guarantee coverage of every species, date, or deployment.
+- **Exhaustive inference:** applies the classifier head to all windows in batches. Export is still limited by `EXHAUSTIVE_MIN_SCORE` and `MAX_PREDICTIONS_PER_WINDOW`; set the latter to `None` to save all classes above the threshold.
 
-Con el entorno fijado, utiliza `GEOGRAPHIC_FILTER_MODE = "csv"` o `"none"`. Los modos `geofence_country` y `geofence_coordinates` requieren capacidades que no forman parte de Perch-Hoplite `1.0.2`.
+With the pinned environment, use `GEOGRAPHIC_FILTER_MODE = "csv"` or `"none"`. The `geofence_country` and `geofence_coordinates` modes require capabilities that are not part of Perch-Hoplite `1.0.2`.
 
-Para el filtro CSV, completa `config/geographic_species.csv` con `scientific_name` o `perch_label`; admite además `deployment`, `country`, `locality` e `include`. Si falta el archivo, el notebook crea una plantilla y se detiene para que la completes. Ajusta los filtros geográficos a tu área de estudio y revisa `species_unmatched.csv`.
+For CSV filtering, complete `config/geographic_species.csv` with `scientific_name` or `perch_label`; it also supports `deployment`, `country`, `locality`, and `include`. If the file is missing, the notebook creates a template and stops so you can complete it. Adjust geographic filters to your study area and review `species_unmatched.csv`.
 
-Las salidas se guardan bajo:
+Outputs are saved under:
 
 ```text
 outputs/multispecies/<RUN_NAME>/
@@ -164,16 +164,16 @@ outputs/multispecies/<RUN_NAME>/
 └── summaries/
 ```
 
-Puedes particionar por día o por hora. La partición horaria requiere metadatos horarios reales. Cambia `RUN_NAME` cuando cambies la configuración de la corrida; la reanudación verifica su compatibilidad.
+You can partition by day or hour. Hourly partitioning requires actual time metadata. Change `RUN_NAME` when changing the run configuration; resuming checks compatibility.
 
-Estas salidas reutilizan los embeddings sin volver a procesar los audios. Las detecciones requieren validación acústica local: un score alto no equivale por sí solo a presencia confirmada, y la ausencia de resultados filtrados no demuestra ausencia de la especie.
+These outputs reuse embeddings without processing the audio again. Detections require local acoustic validation: a high score alone does not mean confirmed presence, and the absence of filtered results does not demonstrate species absence.
 
-## Estado y alcance
+## Status and scope
 
-El repositorio contiene ocho notebooks, la definición del entorno, el archivo de dependencias bloqueadas y la licencia. No incluye una interfaz de línea de comandos propia ni una ejecución automática integral del pipeline.
+The repository contains eight notebooks, the environment definition, the dependency lockfile, and the license. It does not include its own command-line interface or an automated end-to-end pipeline run.
 
-Las rutas, etiquetas y nombres de modelos que aparecen en las celdas son ejemplos de trabajo y deben adaptarse. Algunas descripciones internas conservan nombres antiguos de notebooks o no reflejan sus parámetros actuales; los enlaces y las notas de este README siguen los archivos y el código disponibles.
+The paths, labels, and model names in the cells are working examples and must be adapted. Some internal descriptions retain old notebook names or do not reflect their current parameters; the links and notes in this README follow the available files and code.
 
-## Licencia
+## License
 
-El código se distribuye bajo la **GNU General Public License, versión 3**. Consulta [`LICENSE`](LICENSE) para el texto completo.
+The code is distributed under the **GNU General Public License, version 3**. See [`LICENSE`](LICENSE) for the full text.
